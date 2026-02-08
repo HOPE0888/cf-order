@@ -5,87 +5,102 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>QuickPick | 扫码自提店</title>
-    <!-- 直接引入 CDN 库 -->
+    <!-- 核心库引入 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Inter:wght@400;700;900&display=swap');
         body { 
-            font-family: 'Noto Sans SC', sans-serif; 
+            font-family: 'Inter', 'Noto Sans SC', sans-serif; 
             background-color: #f8fafc;
-            margin: 0; padding: 0;
+            color: #1e293b;
             -webkit-tap-highlight-color: transparent;
         }
-        .animate-in { animation: fadeIn 0.4s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        #root { min-height: 100vh; }
+        .order-card { animation: slideUp 0.4s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@^19.2.4",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0"
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0",
+    "react/": "https://esm.sh/react@^19.2.4/"
   }
 }
 </script>
+<link rel="stylesheet" href="/index.css">
 </head>
 <body>
     <div id="root">
-        <!-- 初始加载状态 -->
-        <div class="flex items-center justify-center min-h-screen">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <!-- 基础加载动画 -->
+        <div class="flex items-center justify-center min-h-screen bg-slate-50">
+            <div class="flex flex-col items-center gap-4">
+                <div class="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                <p class="text-xs font-bold text-slate-400 tracking-widest uppercase">Initializing QuickPick...</p>
+            </div>
         </div>
     </div>
 
-    <!-- 所有逻辑写在一个 Script 块中 -->
     <script type="module">
         import React, { useState, useEffect } from 'https://esm.sh/react@18.2.0';
         import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
-        import { HashRouter, Routes, Route, Link, useNavigate, useParams } from 'https://esm.sh/react-router-dom@6.11.2?external=react,react-dom';
+        import { HashRouter, Routes, Route, Link, useNavigate, useParams } from 'https://esm.sh/react-router-dom@6.11.2?deps=react@18.2.0,react-dom@18.2.0';
 
-        // 1. 商品数据
+        // 1. 数据定义
         const PRODUCTS = [
-            { id: 1, name: { zh: '招牌生椰拿铁', ja: '生ヤシラテ' }, price: 500, img: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400', desc: '年度爆款，口感醇厚' },
-            { id: 2, name: { zh: '经典美式', ja: 'ブラック' }, price: 400, img: 'https://images.unsplash.com/photo-1559496417-e7f25cb247f3?w=400', desc: '现磨浓缩，提神利器' },
-            { id: 3, name: { zh: '红丝绒蛋糕', ja: 'ケーキ' }, price: 680, img: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=400', desc: '绵密丝滑，甜度适中' },
-            { id: 4, name: { zh: '抹茶冷萃', ja: '冷茶' }, price: 450, img: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400', desc: '清爽解渴，夏日首选' }
+            { id: 'p1', name: { zh: '招牌生椰拿铁', ja: '生ヤシラテ' }, price: 500, img: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400', desc: '口感醇厚，年度爆款' },
+            { id: 'p2', name: { zh: '经典美式', ja: 'ブラック' }, price: 400, img: 'https://images.unsplash.com/photo-1559496417-e7f25cb247f3?w=400', desc: '纯正现磨，提神利器' },
+            { id: 'p3', name: { zh: '抹茶冷萃', ja: '抹茶冷茶' }, price: 450, img: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400', desc: '清爽解渴，回甘明显' },
+            { id: 'p4', name: { zh: '红丝绒蛋糕', ja: 'ケーキ' }, price: 680, img: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=400', desc: '新鲜草莓，甜而不腻' }
         ];
 
-        // 2. 核心 App 组件
         const App = () => {
             const [lang, setLang] = useState('zh');
             const [cart, setCart] = useState([]);
-            const [orders, setOrders] = useState([]);
-            const rate = 0.048;
+            const [orders, setOrders] = useState(() => {
+                const saved = localStorage.getItem('qp_data');
+                return saved ? JSON.parse(saved) : [];
+            });
+            const rate = 0.048; // 汇率
+
+            useEffect(() => {
+                localStorage.setItem('qp_data', JSON.stringify(orders));
+            }, [orders]);
 
             const onAdd = (p) => setCart(prev => {
                 const ex = prev.find(i => i.id === p.id);
                 return ex ? prev.map(i => i.id === p.id ? {...i, qty: i.qty + 1} : i) : [...prev, {...p, qty: 1}];
             });
-            const onRemove = (id) => setCart(prev => prev.map(i => i.id === id ? {...i, qty: i.qty - 1} : i).filter(i => i.qty > 0));
+
+            const onRemove = (id) => setCart(prev => 
+                prev.map(i => i.id === id ? {...i, qty: i.qty - 1} : i).filter(i => i.qty > 0)
+            );
 
             return (
                 <HashRouter>
-                    <div className="max-w-md mx-auto min-h-screen bg-white shadow-2xl flex flex-col">
-                        <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b p-4 flex justify-between items-center">
-                            <Link to="/" className="text-xl font-black italic text-indigo-600 tracking-tighter">QUICKPICK.</Link>
-                            <div className="flex gap-3 items-center">
-                                <select value={lang} onChange={e => setLang(e.target.value)} className="bg-slate-100 text-[10px] font-bold px-2 py-1 rounded-full border-none outline-none">
-                                    <option value="zh">CN</option>
-                                    <option value="ja">JP</option>
+                    <div className="max-w-md mx-auto min-h-screen bg-white shadow-2xl flex flex-col relative overflow-hidden">
+                        {/* 导航栏 */}
+                        <header className="sticky top-0 z-50 glass border-b px-5 h-16 flex justify-between items-center">
+                            <Link to="/" className="text-xl font-black italic tracking-tighter text-indigo-600">QUICKPICK.</Link>
+                            <div className="flex items-center gap-3">
+                                <select value={lang} onChange={e => setLang(e.target.value)} className="bg-slate-100 text-[10px] font-bold px-2 py-1 rounded-full border-none outline-none cursor-pointer">
+                                    <option value="zh">ZH</option>
+                                    <option value="ja">JA</option>
                                 </select>
-                                <Link to="/admin" className="text-slate-300 hover:text-indigo-600"><i className="fa-solid fa-gear"></i></Link>
+                                <Link to="/admin" className="text-slate-300 hover:text-indigo-600 transition-colors">
+                                    <i className="fa-solid fa-gear"></i>
+                                </Link>
                             </div>
                         </header>
-                        
-                        <main className="flex-1 p-5">
+
+                        <main className="flex-1 p-5 no-scrollbar overflow-y-auto">
                             <Routes>
                                 <Route path="/" element={<Shop lang={lang} cart={cart} onAdd={onAdd} onRemove={onRemove} rate={rate} />} />
                                 <Route path="/checkout" element={<Checkout cart={cart} rate={rate} onDone={(o) => {setOrders([o, ...orders]); setCart([]); return o;}} />} />
                                 <Route path="/done/:id" element={<Done orders={orders} />} />
-                                <Route path="/admin" element={<Admin orders={orders} />} />
+                                <Route path="/admin" element={<Admin orders={orders} setOrders={setOrders} />} />
                             </Routes>
                         </main>
                     </div>
@@ -96,28 +111,29 @@
         const Shop = ({ lang, cart, onAdd, onRemove, rate }) => {
             const totalQty = cart.reduce((s, i) => s + i.qty, 0);
             return (
-                <div className="animate-in pb-20">
-                    <div className="bg-indigo-600 rounded-3xl p-6 text-white mb-6 shadow-xl">
-                        <h2 className="text-2xl font-black italic leading-none">ORDER &<br/>PICK UP.</h2>
-                        <p className="text-[10px] font-bold opacity-60 mt-3 tracking-widest uppercase">中国 / 日本 跨境配送</p>
+                <div className="order-card pb-24">
+                    <div className="bg-indigo-600 rounded-3xl p-6 text-white mb-8 shadow-xl relative overflow-hidden">
+                        <h2 className="text-2xl font-black italic leading-none">SCAN, ORDER<br/>& PICK UP.</h2>
+                        <p className="text-[10px] font-bold opacity-50 mt-4 tracking-widest uppercase">扫码下单 · 自提点备货</p>
                     </div>
+
                     <div className="space-y-4">
                         {PRODUCTS.map(p => {
                             const item = cart.find(i => i.id === p.id);
                             return (
-                                <div key={p.id} className="bg-white border border-slate-50 p-3 rounded-2xl flex gap-4 shadow-sm">
-                                    <img src={p.img} className="w-20 h-20 object-cover rounded-xl" />
-                                    <div className="flex-1">
-                                        <h3 className="font-bold text-slate-800 text-sm">{p.name[lang]}</h3>
-                                        <div className="flex justify-between items-end mt-2">
+                                <div key={p.id} className="bg-white border border-slate-100 p-3 rounded-2xl flex gap-4">
+                                    <img src={p.img} className="w-24 h-24 object-cover rounded-xl shadow-inner bg-slate-50" />
+                                    <div className="flex-1 flex flex-col justify-between py-1">
+                                        <h3 className="font-bold text-slate-800 text-sm leading-tight">{p.name[lang]}</h3>
+                                        <div className="flex justify-between items-end">
                                             <div>
-                                                <p className="text-indigo-600 font-black">¥{p.price}</p>
-                                                <p className="text-[10px] text-emerald-500 font-bold leading-none">≈￥{(p.price * rate).toFixed(2)}</p>
+                                                <p className="text-indigo-600 font-black text-lg leading-none">¥{p.price}</p>
+                                                <p className="text-[9px] text-emerald-500 font-bold mt-1 uppercase">≈ ￥{(p.price * rate).toFixed(2)} CNY</p>
                                             </div>
-                                            <div className="flex items-center gap-3 bg-slate-50 p-1 rounded-full shadow-inner">
-                                                {item && <button onClick={() => onRemove(p.id)} className="w-6 h-6 rounded-full bg-white border flex items-center justify-center text-xs">-</button>}
-                                                {item && <span className="text-xs font-black">{item.qty}</span>}
-                                                <button onClick={() => onAdd(p)} className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs shadow-md">+</button>
+                                            <div className="flex items-center gap-3 bg-slate-50 p-1 rounded-full border border-slate-100">
+                                                {item && <button onClick={() => onRemove(p.id)} className="w-7 h-7 rounded-full bg-white border flex items-center justify-center text-xs">-</button>}
+                                                {item && <span className="text-xs font-black w-4 text-center">{item.qty}</span>}
+                                                <button onClick={() => onAdd(p)} className="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs shadow-md">+</button>
                                             </div>
                                         </div>
                                     </div>
@@ -125,10 +141,11 @@
                             );
                         })}
                     </div>
+
                     {totalQty > 0 && (
-                        <Link to="/checkout" className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-sm bg-slate-900 text-white p-4 rounded-2xl shadow-2xl flex justify-between items-center animate-in">
-                            <span className="text-xs font-bold">{totalQty} ITEMS</span>
-                            <span className="font-black text-sm uppercase">去结算 Checkout</span>
+                        <Link to="/checkout" className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2.5rem)] max-w-sm bg-slate-900 text-white p-4 rounded-2xl shadow-2xl flex justify-between items-center transition-transform hover:scale-105">
+                            <span className="text-xs font-bold px-3 py-1 bg-indigo-600 rounded-lg">{totalQty} ITEMS</span>
+                            <span className="font-black text-sm uppercase tracking-tighter">去结算 CHECKOUT</span>
                         </Link>
                     )}
                 </div>
@@ -148,26 +165,32 @@
             };
 
             const submit = () => {
-                if(!form.name || !form.img) return alert("请填写姓名并上传支付截图");
-                const o = onDone({ id: Date.now(), name: form.name, code: Math.random().toString(36).substr(2,6).toUpperCase(), cny, img: form.img, time: new Date().toLocaleTimeString() });
+                if(!form.name || !form.img) return alert("请填写名字并上传截图");
+                const o = onDone({
+                    id: Date.now(),
+                    name: form.name,
+                    code: Math.random().toString(36).substr(2, 6).toUpperCase(),
+                    cny, img: form.img, status: 'PENDING',
+                    time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+                });
                 nav(`/done/${o.id}`);
             };
 
             return (
-                <div className="animate-in space-y-6">
-                    <h2 className="text-xl font-black italic underline decoration-indigo-200 decoration-8">CHECKOUT.</h2>
-                    <div className="bg-slate-50 border-2 border-dashed rounded-3xl p-6 text-center">
-                        <p className="text-[10px] font-black text-slate-400 mb-4 tracking-[0.2em] uppercase">微信/支付宝支付 ￥{cny}</p>
-                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=PAY_${cny}`} className="w-32 h-32 mx-auto mb-6 shadow-lg rounded-xl" />
-                        <label className="block w-full cursor-pointer bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                <div className="order-card space-y-6">
+                    <h2 className="text-2xl font-black italic border-b-4 border-indigo-100 inline-block">CHECKOUT.</h2>
+                    <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2rem] p-8 text-center space-y-4">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">付款 ￥{cny}</p>
+                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=PAY_CNY_${cny}`} className="w-32 h-32 mx-auto rounded-xl shadow-lg" />
+                        <label className="block w-full cursor-pointer">
                             <input type="file" className="hidden" onChange={handleFile} accept="image/*" />
-                            <div className="text-xs font-bold text-slate-400">
-                                {form.img ? <span className="text-indigo-600">已选好支付截图 ✅</span> : "上传支付截图 Upload Screenshot"}
+                            <div className={`py-4 rounded-2xl border transition-all ${form.img ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'bg-white border-slate-100 text-slate-400'}`}>
+                                <span className="text-[10px] font-black uppercase">{form.img ? '凭证已上传 ✓' : '上传支付截图'}</span>
                             </div>
                         </label>
                     </div>
-                    <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="您的微信名 / Pickup Name" className="w-full p-4 rounded-2xl bg-slate-100 border-none font-bold text-sm focus:ring-2 focus:ring-indigo-600" />
-                    <button onClick={submit} className="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black text-lg shadow-xl hover:bg-indigo-700 active:scale-95 transition-all">下单取货</button>
+                    <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="您的微信名/取货称呼" className="w-full p-5 rounded-2xl bg-slate-100 border-none font-bold text-sm focus:ring-2 focus:ring-indigo-600 outline-none" />
+                    <button onClick={submit} className="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black text-lg shadow-xl uppercase">下单并生成取货码</button>
                 </div>
             );
         };
@@ -176,36 +199,46 @@
             const { id } = useParams();
             const o = orders.find(x => x.id == id);
             return (
-                <div className="text-center py-10 animate-in">
-                    <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl"><i className="fa-solid fa-check"></i></div>
-                    <h2 className="text-3xl font-black italic">SUCCESS.</h2>
-                    <div className="mt-10 bg-indigo-600 p-12 rounded-[3rem] shadow-2xl">
-                        <p className="text-white/40 text-[10px] font-black uppercase tracking-[0.4em] mb-4">Pickup Code</p>
-                        <p className="text-white text-6xl font-black tracking-tighter uppercase">{o?.code}</p>
+                <div className="text-center py-10 order-card">
+                    <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-lg shadow-emerald-50"><i className="fa-solid fa-check"></i></div>
+                    <h2 className="text-3xl font-black italic tracking-tight">SUCCESS!</h2>
+                    <p className="text-slate-400 text-[10px] font-bold mt-2 uppercase tracking-widest underline decoration-indigo-200 decoration-4 underline-offset-4">请保存此取货码到店领取</p>
+                    <div className="mt-12 bg-indigo-600 p-12 rounded-[3.5rem] shadow-2xl relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-white/20"></div>
+                        <p className="text-white/40 text-[9px] font-black uppercase tracking-[0.5em] mb-4">Pickup Code</p>
+                        <p className="text-7xl font-black text-white tracking-tighter uppercase">{o?.code}</p>
                     </div>
-                    <Link to="/" className="inline-block mt-12 text-slate-300 font-black text-xs uppercase underline underline-offset-8">Back to Shop</Link>
+                    <Link to="/" className="inline-block mt-12 text-slate-300 font-black text-[10px] uppercase underline underline-offset-8">Back to Shop</Link>
                 </div>
             );
         };
 
-        const Admin = ({ orders }) => (
-            <div className="animate-in space-y-6">
-                <h2 className="text-xl font-black italic">ADMIN ORDERS.</h2>
+        const Admin = ({ orders, setOrders }) => (
+            <div className="order-card space-y-6">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-black italic">ADMIN.</h2>
+                    <span className="bg-slate-900 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase">{orders.length} ORDERS</span>
+                </div>
                 <div className="space-y-4">
-                    {orders.length === 0 ? <div className="py-20 text-center text-slate-300 font-bold border-2 border-dashed rounded-3xl">暂无订单</div> : orders.map(o => (
-                        <div key={o.id} className="bg-white p-4 rounded-2xl border flex justify-between items-center shadow-sm">
-                            <div className="flex gap-4 items-center">
-                                <div className="text-center">
-                                    <p className="text-xl font-black text-indigo-600 leading-none">{o.code}</p>
-                                    <p className="text-[8px] font-bold text-slate-300 mt-1">{o.time}</p>
+                    {orders.length === 0 ? <div className="py-20 text-center text-slate-300 font-bold border-2 border-dashed rounded-3xl opacity-50 uppercase text-xs">No Orders Yet</div> : orders.map(o => (
+                        <div key={o.id} className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+                            <div className="flex justify-between items-start">
+                                <div className="flex gap-4 items-center">
+                                    <div className="text-center bg-indigo-50 p-3 rounded-2xl">
+                                        <p className="text-2xl font-black text-indigo-600 leading-none">{o.code}</p>
+                                        <p className="text-[7px] font-bold text-indigo-300 mt-1 uppercase">{o.time}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-black text-slate-800">{o.name}</p>
+                                        <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-tighter">￥{o.cny}</p>
+                                    </div>
                                 </div>
-                                <div className="w-px h-8 bg-slate-100"></div>
-                                <div>
-                                    <p className="text-sm font-black text-slate-800">{o.name}</p>
-                                    <p className="text-[10px] font-bold text-emerald-500">￥{o.cny}</p>
-                                </div>
+                                <button onClick={() => setOrders(prev => prev.filter(x => x.id !== o.id))} className="text-slate-200 hover:text-red-400 transition-colors"><i className="fa-solid fa-circle-xmark"></i></button>
                             </div>
-                            <button onClick={() => window.open(o.img)} className="text-[10px] font-black bg-slate-100 px-3 py-2 rounded-xl text-slate-400 uppercase">查看凭证</button>
+                            <div className="flex gap-2">
+                                <button onClick={() => window.open(o.img)} className="flex-1 py-3 bg-slate-50 rounded-xl text-[10px] font-black uppercase text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all">凭证</button>
+                                <button onClick={() => alert("状态已更新！请备货")} className="flex-[2] py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-100">备货完成</button>
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -215,5 +248,6 @@
         const root = createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
+<script type="module" src="/index.tsx"></script>
 </body>
 </html>
